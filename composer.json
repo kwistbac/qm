@@ -1,0 +1,23 @@
+{
+    "name": "qm/qm",
+    "description": "A simple and fast ORM",
+    "keywords": ["orm"],
+    "homepage": "http://github.com/kwistbac/qm",
+    "type": "library",
+    "license": "GNU AGPLv3",
+    "authors": [
+        {
+            "name": "Kim Wistbacka",
+            "email": "kim.wistbacka@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^7.2.0",
+        "ramsey/uuid": "^3.7.1",
+        "respect/validation": "^1.1.14",
+        "symfony/console": "^4.0.2"
+    },
+    "autoload": {
+        "psr-4": {"Qm\\": "src/"}
+    }
+}
