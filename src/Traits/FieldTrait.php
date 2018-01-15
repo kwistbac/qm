@@ -36,6 +36,26 @@ trait FieldTrait
     /**
     * @inheritDoc
     */
+    public function assign(array $values) : FieldInterface
+    {
+        foreach ($values as $fieldName => $value) {
+            $mutator = 'set' . ucfirst($fieldName);
+            if (method_exists($this, $mutator)) {
+                $this->{$mutator}($value);
+            } elseif (method_exists($this, '__set')) {
+                $this->__set($fieldName, $value);
+            } elseif (method_exists($this, '__call')) {
+                $this->__call($mutator, [$value]);
+            } else {
+                throw new \Exception("Failed to assign $fieldName");
+            }
+        }
+        return $this;
+    }
+
+    /**
+    * @inheritDoc
+    */
     public function getValues() : array
     {
         return $this->values;

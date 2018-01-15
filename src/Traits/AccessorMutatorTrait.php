@@ -1,22 +1,8 @@
 <?php
 namespace Qm\Traits;
 
-use \Qm\Interfaces\FieldInterface;
-
 trait AccessorMutatorTrait
 {
-    /**
-    * @inheritDoc
-    */
-    public function assign(array $values) : FieldInterface
-    {
-        foreach ($values as $fieldName => $value) {
-            $method = 'set' . ucfirst($fieldName);
-            $this->{$method}($value);
-        }
-        return $this;
-    }
-
     /**
     * @inheritDoc
     */
