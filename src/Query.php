@@ -41,7 +41,7 @@ class Query extends Sql
             if (is_array($field)) {
                 if (isset($classes[$alias])) {
                     // Select specified fields
-                    $this->prepareClassFields($alias, $class, $field[$alias]);
+                    $this->prepareClassFields($alias, $classes[$alias], $field[$alias]);
                 } elseif (is_array($field[$alias])) {
                     $this->prepareAssocFields($alias, $field[$alias]);
                 } else {
@@ -56,10 +56,11 @@ class Query extends Sql
                 }
             } elseif (isset($classes[$alias])) {
                 // Field is a table alias, select all fields
-                $this->prepareClassFields($alias);
+                $this->prepareClassFields($alias, $classes[$alias]);
             } elseif (substr($alias, -2) == '.*') {
                 // Field is a table alias, select all fields
-                $this->prepareClassFields(substr($alias, 0, -2), $class);
+                $classAlias = substr($alias, 0, -2);
+                $this->prepareClassFields($classAlias, $classes[$classAlias]);
             } else {
                 $this->prepareAssocFields($alias, [$alias]);
             }
