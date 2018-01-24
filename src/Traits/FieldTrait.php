@@ -54,13 +54,21 @@ trait FieldTrait
     }
 
     /**
-    * @inheritDoc
+    * Get persistent values
+    *
+    * @return array
     */
-    public function getValues() : array
+    protected function getValues() : array
     {
         return $this->values;
     }
 
+    /**
+    * Set persistent values
+    *
+    * @params array $values
+    * @return self
+    */
     protected function setValues(array $values) : self
     {
         $this->values = $values;
@@ -68,16 +76,24 @@ trait FieldTrait
     }
 
     /**
-    * @inheritDoc
+    * Get dirty values
+    *
+    * @return array
     */
-    public function getDirty() : array
+    protected function getDirty() : array
     {
         return $this->dirty;
     }
 
-    protected function setDirty(array $dirty) : self
+    /**
+    * Set dirty values
+    *
+    * @params array $values
+    * @return self
+    */
+    protected function setDirty(array $values) : self
     {
-        $this->dirty = $dirty;
+        $this->dirty = $values;
         return $this;
     }
 

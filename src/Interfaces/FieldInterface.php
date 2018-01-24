@@ -23,25 +23,11 @@ interface FieldInterface extends MetadataInterface
     public function isDirty(?string $fieldName = null) : bool;
 
     /**
-    * Get dirty values
-    *
-    * @return array
-    */
-    public function getDirty() : array;
-
-    /**
     * Clean dirty values
     *
     * @return self
     */
     public function clean() : self;
-
-    /**
-    * Get persistent values
-    *
-    * @return array
-    */
-    public function getValues() : array;
 
     /**
     * Convert to array, merging persistent and dirty values
