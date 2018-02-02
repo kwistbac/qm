@@ -6,10 +6,10 @@ interface ValidationInterface
     /**
     * Validate values
     *
-    * @param string $values
-    * @param ?PersistenceInterface $instance
+    * @param array $values
+    * @param array $context
     * @return array Validation messages
     */
-    public static function validate(array $values, ?PersistenceInterface $instance = null) : array;
+    public static function validate(array $values, array $context = []) : array;
 }
 

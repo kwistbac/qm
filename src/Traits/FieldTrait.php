@@ -139,7 +139,7 @@ trait FieldTrait
         );
     }
 
-    private function checkFormat(string $fieldName, $value, array $field) : void
+    protected static function checkFormat(array $field, $value) : ?string
     {
         $formats = self::FIELD_FORMATS;
         switch ($field['type']) {
@@ -155,23 +155,15 @@ trait FieldTrait
                     $min = 0;
                 }
                 if ($min > $value || $max < $value) {
-                    throw new \Exception(
-                        get_class($this)
-                        . ": value of the field $fieldName must be in the range "
-                        . " $min - $max"
-                        . ", $value given, "
-                    );
+                    return "must be in the range $min - $max, $value given";
                 }
             break;
             case FieldInterface::FIELD_CHAR:
             case FieldInterface::FIELD_VARCHAR:
                 if (strlen($value) > $field['length']) {
-                    throw new \Exception(
-                        get_class($this)
-                        . ": value of the field $fieldName must be no longer than"
+                    return 'must be no longer than'
                         . " {$field['length']} characters"
-                        . ', ' . strlen($value) . ' given, '
-                    );
+                        . ', ' . strlen($value) . ' given';
                 }
             break;
             case FieldInterface::FIELD_TINYTEXT:
@@ -179,12 +171,9 @@ trait FieldTrait
             case FieldInterface::FIELD_MEDIUMTEXT:
             case FieldInterface::FIELD_LONGTEXT:
                 if (strlen($value) > $formats[$field['type']]) {
-                    throw new \Exception(
-                        get_class($this)
-                        . ": value of the field $fieldName must be no longer than"
+                    return 'must be no longer than'
                         . " {$formats[$field['type']]} characters"
-                        . ', ' . strlen($value) . ' given, '
-                    );
+                        . ', ' . strlen($value) . ' given, ';
                 }
             break;
             case FieldInterface::FIELD_DATETIME:
@@ -195,15 +184,19 @@ trait FieldTrait
                     $value
                 );
                 if ($dt === false || array_sum($dt->getLastErrors())) {
-                    throw new \Exception(
-                        get_class($this)
-                        . ": value of the field $fieldName must be of the"
-                        . " format {$formats[$field['type']]}"
-                        . ', invalid format given, '
-                    );
+                    return "must be of the format {$formats[$field['type']]}"
+                        . ', invalid format given';
+                }
+            break;
+            case FieldInterface::FIELD_ENUM:
+                if (!in_array($value, $field['values'])) {
+                    return "must be one of ("
+                        . implode(', ', $field['values'])
+                        . "), $value given";
                 }
             break;
         }
+        return null;
     }
 
     protected function set(string $fieldName, $value) : FieldInterface
@@ -222,7 +215,12 @@ trait FieldTrait
             if ($value == $cast) {
                 $valid = true;
                 $value = $cast;
-                $this->checkFormat($fieldName, $value, $field);
+                if ($error = static::checkFormat($field, $value)) {
+                    throw new \Exception(
+                        get_class($this)
+                        . ": value of the field $fieldName $error, "
+                    );
+                }
             }
         } elseif (!isset($field['null']) || $field['null']) {
             $valid = true;
