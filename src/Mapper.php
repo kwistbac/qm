@@ -2,23 +2,34 @@
 namespace Qm;
 
 /**
- * The Mapper class is a wrapper around a PDOStatement. It exposes three extended
- * fetch modes: Mapper::FETCH_ASSOC_NESTED, Mapper::FETCH_MAP and
- * Mapper::FETCH_MAP_NESTED. These fetch modes require a mapping format to be
+ * The Mapper class is a wrapper around a PDOStatement. It exposes five extended
+ * fetch modes: Mapper::FETCH_ASSOC_NESTED, Mapper::FETCH_ASSOC_GROUP,
+ * Mapper::FETCH_CLASS, Mapper::FETCH_CLASS_NESTED and Mapper::FETCH_CLASS_GROUP.
+ *
+ * These fetch modes require a mapping format to be
  * supplied using the setMappingFormat method.
  *
  * @author Kim Wistbacka <kim.wistbacka@gmail.com>
  */
 class Mapper implements \Iterator, \Countable
 {
-    const FETCH_MAP = -1;
-    const FETCH_MAP_NESTED = -2;
-    const FETCH_ASSOC_NESTED = -3;
+    public const FETCH_ASSOC = -3;
+    public const FETCH_CLASS = -9;
+
+    public const FETCH_GROUP = -65537;
+    public const FETCH_UNIQUE = -196609;
+    public const FETCH_NESTED = -1048577;
 
     protected static $fetchModes = [
-        self::FETCH_MAP => \PDO::FETCH_ASSOC,
-        self::FETCH_MAP_NESTED => \PDO::FETCH_NUM,
-        self::FETCH_ASSOC_NESTED => \PDO::FETCH_NUM,
+        self::FETCH_ASSOC => \PDO::FETCH_ASSOC,
+        self::FETCH_ASSOC & self::FETCH_NESTED => \PDO::FETCH_NUM,
+        self::FETCH_ASSOC & self::FETCH_GROUP => \PDO::FETCH_NUM,
+        self::FETCH_ASSOC & self::FETCH_UNIQUE => \PDO::FETCH_NUM,
+
+        self::FETCH_CLASS => \PDO::FETCH_ASSOC,
+        self::FETCH_CLASS & self::FETCH_NESTED => \PDO::FETCH_NUM,
+        self::FETCH_CLASS & self::FETCH_GROUP => \PDO::FETCH_NUM,
+        self::FETCH_CLASS & self::FETCH_UNIQUE => \PDO::FETCH_NUM,
     ];
 
     protected $statement = null;
@@ -31,6 +42,7 @@ class Mapper implements \Iterator, \Countable
     protected $fields = [];
     protected $nullables = [];
     protected $counts = [];
+    protected $ids = [];
 
     // Iterator state
     protected $row = false;
@@ -83,6 +95,9 @@ class Mapper implements \Iterator, \Countable
                 if (isset($format['class'])) {
                     $this->classes[$alias] = $format['class'];
                 }
+                if (isset($format['id'])) {
+                    $this->ids[$alias] = $format['id'];
+                }
                 if (isset($format['null']) && $format['null']) {
                     $this->nullables[$alias] = $format['null'];
                 }
@@ -96,14 +111,14 @@ class Mapper implements \Iterator, \Countable
             // Set default fetch mode
             if (count($this->counts) > 1) {
                 if (count($this->classes) == 0) {
-                    $this->setFetchMode(self::FETCH_ASSOC_NESTED);
+                    $this->setFetchMode(self::FETCH_ASSOC & self::FETCH_NESTED);
                 } else {
-                    $this->setFetchMode(self::FETCH_MAP_NESTED);
+                    $this->setFetchMode(self::FETCH_CLASS & self::FETCH_NESTED);
                 }
             } elseif (count($this->classes) == 0) {
-                $this->setFetchMode(\PDO::FETCH_ASSOC);
+                $this->setFetchMode(self::FETCH_ASSOC);
             } else {
-                $this->setFetchMode(self::FETCH_MAP);
+                $this->setFetchMode(self::FETCH_CLASS);
             }
         }
     }
@@ -141,7 +156,10 @@ class Mapper implements \Iterator, \Countable
         }
 
         switch ($fetchStyle) {
-            case self::FETCH_MAP:
+            case self::FETCH_ASSOC:
+                return $row;
+            break;
+            case self::FETCH_CLASS:
                 if (isset($this->classes[$this->first])) {
                     return new $this->classes[$this->first](
                         $this->connectionName,
@@ -150,7 +168,9 @@ class Mapper implements \Iterator, \Countable
                 }
                 return $row;
             break;
-            case self::FETCH_MAP_NESTED:
+            case self::FETCH_ASSOC & self::FETCH_NESTED:
+                $assoc = true;
+            case self::FETCH_CLASS & self::FETCH_NESTED:
                 $result = [];
                 $offset = 0;
                 foreach ($this->counts as $alias => $count) {
@@ -162,33 +182,12 @@ class Mapper implements \Iterator, \Countable
                         if (isset($this->nullables[$alias])
                             && empty(array_filter($values))) {
                             $result[$alias] = null;
-                        } elseif (isset($this->classes[$alias])) {
+                        } elseif (!isset($assoc)
+                            && isset($this->classes[$alias])) {
                             $result[$alias] = new $this->classes[$alias](
                                 $this->connectionName,
                                 $values
                             );
-                        } else {
-                            $result[$alias] = $values;
-                        }
-                    } else {
-                        $result[$alias] = $row[$offset];
-                    }
-                    $offset += $count;
-                }
-                return $result;
-            break;
-            case self::FETCH_ASSOC_NESTED:
-                $result = [];
-                $offset = 0;
-                foreach ($this->counts as $alias => $count) {
-                    if (isset($this->fields[$alias])) {
-                        $values = array_combine(
-                            $this->fields[$alias],
-                            array_slice($row, $offset, $count)
-                        );
-                        if (isset($this->nullables[$alias])
-                            && empty(array_filter($values))) {
-                            $result[$alias] = null;
                         } else {
                             $result[$alias] = $values;
                         }
@@ -215,106 +214,148 @@ class Mapper implements \Iterator, \Countable
         }
 
         switch ($fetchStyle) {
-            case self::FETCH_MAP:
-                if (isset($this->classes[$this->first])) {
-                    $result = [];
-                    foreach ($this->statement as $row) {
-                        $result[] = new $this->classes[$this->first](
-                            $this->connectionName,
-                            $row
-                        );
-                    }
-                    return $result;
-                } else {
+            case self::FETCH_ASSOC:
+                $assoc = true;
+            case self::FETCH_CLASS:
+                if (isset($assoc) || !isset($this->classes[$this->first])) {
                     return $this->statement->fetchAll(
                         self::$fetchModes[$fetchStyle],
                         ...$args
                     );
                 }
-            break;
-            case self::FETCH_MAP_NESTED:
-                foreach ($this->statement as $row) {
-                    $result = [];
-                    $offset = 0;
-                    foreach ($this->counts as $alias => $count) {
-                        if (isset($this->fields[$alias])) {
-                            $values = array_combine(
-                                $this->fields[$alias],
-                                array_slice($row, $offset, $count)
-                            );
-                            if (isset($this->nullables[$alias])
-                                && empty(array_filter($values))) {
-                                $result[$alias] = null;
-                            } elseif (isset($this->classes[$alias])) {
-                                $result[$alias] = new $this->classes[$alias](
-                                    $this->connectionName,
-                                    $values
-                                );
-                            } else {
-                                $result[$alias] = $values;
-                            }
-                        } else {
-                            $result[$alias] = $row[$offset];
-                        }
-                        $offset += $count;
-                    }
-                    $results[] = $result;
-                }
-                return $results;
-            break;
-            case self::FETCH_ASSOC_NESTED:
-                foreach ($this->statement as $row) {
-                    $result = [];
-                    $offset = 0;
-                    foreach ($this->counts as $alias => $count) {
-                        if (isset($this->fields[$alias])) {
-                            $values = array_combine(
-                                $this->fields[$alias],
-                                array_slice($row, $offset, $count)
-                            );
-                            if (isset($this->nullables[$alias])
-                                && empty(array_filter($values))) {
-                                $result[$alias] = null;
-                            } else {
-                                $result[$alias] = $values;
-                            }
-                        } else {
-                            $result[$alias] = $row[$offset];
-                        }
-                        $offset += $count;
-                    }
-                    $results[] = $result;
-                }
-                return $results;
-            break;
-            /* case self::FETCH_ASSOC_GRAPH:
-                $current = null;
                 $result = [];
-                $offset = 0;
-                foreach ($this->counts as $alias => $count) {
-                    $values = array_combine(
-                        $this->fields[$alias],
-                        array_slice($row, $offset, $count)
+                foreach ($this->statement as $row) {
+                    $result[] = new $this->classes[$this->first](
+                        $this->connectionName,
+                        $row
                     );
-                    if (!isset($this->nullables[$alias])
-                        || !empty(array_filter($values))) {
-                        $id = $values[$this->ids[$alias]];
-                        if ($offset == 0 && $id != $current) {
-                            $result[$id] = $values;
-                            $current = $id;
-                        } elseif ($offset != 0
-                            && !isset($result[$current][$alias][$id])) {
-                            $result[$current][$alias][$id] = $values;
-                        }
-                    }
-                    $offset += $count;
                 }
                 return $result;
-            break; */
+            break;
+            case self::FETCH_ASSOC & self::FETCH_NESTED:
+                $assoc = true;
+            case self::FETCH_CLASS & self::FETCH_NESTED:
+                return $this->fetchAllNested($assoc ?? false);
+            break;
+            case self::FETCH_ASSOC & self::FETCH_GROUP:
+                $assoc = true;
+            case self::FETCH_CLASS & self::FETCH_GROUP:
+                return $this->fetchAllGroup($assoc ?? false, false);
+            break;
+            case self::FETCH_ASSOC & self::FETCH_UNIQUE:
+                $assoc = true;
+            case self::FETCH_CLASS & self::FETCH_UNIQUE:
+                return $this->fetchAllGroup($assoc ?? false, true);
+            break;
             default:
                 throw new \Exception("Unknown fetch mode: $fetchStyle");
             break;
         }
+    }
+
+    private function fetchAllNested(bool $assoc)
+    {
+        $results = [];
+        foreach ($this->statement as $row) {
+            $result = [];
+            $offset = 0;
+            foreach ($this->counts as $alias => $count) {
+                if (isset($this->fields[$alias])) {
+                    $values = array_combine(
+                        $this->fields[$alias],
+                        array_slice($row, $offset, $count)
+                    );
+                    if (isset($this->nullables[$alias])
+                        && empty(array_filter($values))) {
+                        $result[$alias] = null;
+                    } elseif (!$assoc && isset($this->classes[$alias])) {
+                        $result[$alias] = new $this->classes[$alias](
+                            $this->connectionName,
+                            $values
+                        );
+                    } else {
+                        $result[$alias] = $values;
+                    }
+                } else {
+                    $result[$alias] = $row[$offset];
+                }
+                $offset += $count;
+            }
+            $results[] = $result;
+        }
+        return $results;
+    }
+
+    private function fetchAllGroup(bool $assoc, bool $unique)
+    {
+        if (!isset($this->fields[$this->first])
+            || !isset($this->ids[$this->first])
+            || isset($this->nullables[$this->first])) {
+            throw new \Exception("Mapping format is not supported by fetch mode");
+        }
+
+        $results = [];
+        foreach ($this->statement as $row) {
+            $current = null;
+            $offset = 0;
+            foreach ($this->counts as $alias => $count) {
+                if (isset($this->fields[$alias])) {
+                    $values = array_combine(
+                        $this->fields[$alias],
+                        array_slice($row, $offset, $count)
+                    );
+                    if ($offset == 0) {
+                        $id = $values[$this->ids[$alias]];
+                        if ($id !== $current) {
+                            $current = $id;
+                            if (!isset($results[$current])) {
+                                if ($assoc || !isset($this->classes[$alias])) {
+                                    if ($unique) {
+                                        unset($values[$this->ids[$alias]]);
+                                    }
+                                    $results[$current][$alias] = $values;
+                                } else {
+                                    $results[$current][$alias] = new $this->classes[$alias](
+                                        $this->connectionName,
+                                        $values
+                                    );
+                                }
+                            }
+                        }
+                    } elseif ($unique && isset($this->ids[$alias])) {
+                        $id = $values[$this->ids[$alias]];
+                        if (isset($id) && !isset($results[$current][$alias][$id])) {
+                            if ($assoc || !isset($this->classes[$alias])) {
+                                unset($values[$this->ids[$alias]]);
+                                $results[$current][$alias][$id] = $values;
+                            } else {
+                                $results[$current][$alias][$id] = new $this->classes[$alias](
+                                    $this->connectionName,
+                                    $values
+                                );
+                            }
+                        }
+                    } elseif (!isset($this->nullables[$alias])
+                        || !empty(array_filter($values))) {
+                        if ($assoc || !isset($this->classes[$alias])) {
+                            $results[$current][$alias][] = $values;
+                        } else {
+                            $results[$current][$alias][] = new $this->classes[$alias](
+                                $this->connectionName,
+                                $values
+                            );
+                        }
+                    }
+                } else {
+                    $results[$current][$alias] = $row[$offset];
+                }
+                $offset += $count;
+            }
+        }
+        if (!$unique) {
+            return array_values($results);
+        }
+        return $results;
     }
 
     public function fetchColumn(int $columnNumber = 0)

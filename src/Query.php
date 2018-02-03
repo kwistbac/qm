@@ -49,17 +49,23 @@ class Query extends Sql
                 }
             } elseif ($alias == '*') {
                 if ($key > 0) {
-                    throw new \Exception("Invalid field {$alias}");
+                    throw new \Exception("Invalid field \"{$alias}\" selected");
                 }
                 foreach ($classes as $alias => $class) {
                     $this->prepareClassFields($alias, $class);
                 }
             } elseif (isset($classes[$alias])) {
                 // Field is a table alias, select all fields
+                if (!isset($classes[$alias])) {
+                    throw new \Exception("Invalid table alias \"{$alias}\" selected");
+                }
                 $this->prepareClassFields($alias, $classes[$alias]);
             } elseif (substr($alias, -2) == '.*') {
                 // Field is a table alias, select all fields
                 $classAlias = substr($alias, 0, -2);
+                if (!isset($classes[$classAlias])) {
+                    throw new \Exception("Invalid table alias \"{$classAlias}\" selected");
+                }
                 $this->prepareClassFields($classAlias, $classes[$classAlias]);
             } else {
                 $this->prepareAssocFields($alias, [$alias]);
@@ -87,11 +93,15 @@ class Query extends Sql
                 );
             }
         }
+
+        $primaryKey = $class::getPrimaryKey();
         $this->mapping[$alias] = [
             'class' => $class,
             'fields' => $fields,
             'null' => $this->nullable[$alias],
+            'id' => count($primaryKey) == 1 ? reset($primaryKey) : null
         ];
+
         foreach ($fields as $fieldName) {
             parent::addSelect("{$alias}.{$fieldName}");
         }
