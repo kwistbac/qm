@@ -3,6 +3,7 @@ namespace Qm\Traits;
 
 use \Qm\Qm;
 use \Qm\Sql;
+use \Qm\Query;
 
 use \Qm\Interfaces\ValidationInterface;
 use \Qm\Interfaces\PersistenceInterface;
@@ -21,30 +22,37 @@ trait PersistenceTrait
     /**
     * @inheritDoc
     */
-    public static function findOneById(
+    public static function find(
         $id,
         ?string $connectionName = null
     ) : ?PersistenceInterface {
         $primaryKey = static::getPrimaryKey();
 
-        if (count($primaryKey) > 1) {
-            if (!is_array($id)) {
-                throw new \InvalidArgumentException("ID must be an array");
+        if (!is_array($id)) {
+            if (count($primaryKey) > 1) {
+                throw new \InvalidArgumentException('ID must be an array');
             }
-            $values = $id;
-        } else {
-            $values = [$primaryKey[0] => $id];
+            $id = [$primaryKey[0] => $id];
         }
 
         $condition = [];
         foreach ($primaryKey as $fieldName) {
-            if (!isset($values[$fieldName])) {
-                throw new \Exception("$fieldName is undefined");
+            if (!isset($id[$fieldName])) {
+                throw new \Exception("ID field \"$fieldName\" is undefined");
             }
-            $condition[] = ["$fieldName = ?", $values[$fieldName]];
+            $condition[] = ["$fieldName = ?", $id[$fieldName]];
+            unset($id[$fieldName]);
         }
 
-        return static::findOneBy($condition, $connectionName);
+        if (!empty($id)) {
+            throw new \Exception(
+                'ID fields "'
+                . implode('", "', array_keys($id))
+                . '" are invalid'
+            );
+        }
+
+        return static::findOneBy($condition, null, $connectionName);
     }
 
     /**
@@ -52,34 +60,130 @@ trait PersistenceTrait
     */
     public static function findOneBy(
         $condition,
+        $orderBy = null,
         ?string $connectionName = null
     ) : ?PersistenceInterface {
-        $connection = Qm::getConnection($connectionName);
 
-        $sql = (new Sql)
-            ->select(...array_keys(static::getFields()))
-            ->from(static::getTableName())
-            ->where($condition);
-
-        $query = $sql->getSql();
-        $params = $sql->getParameters();
-
-        if (Qm::getDebug()) {
-            error_log(Sql::prepareForDebug($query, $params));
+        $query = (new Query)
+            ->select('*')
+            ->from(static::class)
+            ->limit(1);
+        if (!empty($condition)) {
+            $query->where($condition);
         }
-
-        $statement = $connection->prepare($query);
-        if ($statement->execute($params)
-            && ($values = $statement->fetch(\PDO::FETCH_ASSOC))) {
-            return new static($connectionName, $values);
+        if (!empty($orderBy)) {
+            $query->orderBy($orderBy);
         }
-        return null;
+        $found = $query->execute($connectionName);
+
+        if (!$found->count()) {
+            return null;
+        }
+        return $found->fetch();
     }
 
     /**
     * @inheritDoc
     */
-    public function __construct(?string $connectionName = null, ?array $values = null) {
+    public static function findAll(
+        ?string $connectionName = null
+    ) : \Traversable {
+        return static::findBy([], null, null, null, $connectionName);
+    }
+
+    /**
+    * @inheritDoc
+    */
+    public static function findBy(
+        $condition,
+        $orderBy = null,
+        ?int $limit = null,
+        ?int $offset = null,
+        ?string $connectionName = null
+    ) : \Traversable {
+
+        $query = (new Query)
+            ->select('*')
+            ->from(static::class);
+        if (!empty($condition)) {
+            $query->where($condition);
+        }
+        if (!empty($orderBy)) {
+            $query->orderBy($orderBy);
+        }
+        if (isset($limit)) {
+            $query->limit($limit);
+        }
+        if (isset($offset)) {
+            $query->offset($offset);
+        }
+        return $query->execute($connectionName);
+    }
+
+    /**
+    * @inheritDoc
+    */
+    public static function countAll(
+        ?string $connectionName = null
+    ) : int {
+        return static::countBy(null, $connectionName);
+    }
+
+    /**
+    * @inheritDoc
+    */
+    public static function countBy(
+        $condition,
+        ?string $connectionName = null
+    ) : int {
+
+        $query = (new Sql)
+            ->select('COUNT(*)')
+            ->from(static::getTableName());
+        if (!empty($condition)) {
+            $query->where($condition);
+        }
+        $count = $query->execute($connectionName);
+
+        return (int)$exists->fetchColumn();
+    }
+
+    /**
+    * @inheritDoc
+    */
+    public static function existsAny(
+        ?string $connectionName = null
+    ) : bool {
+        return static::existsBy(null, $connectionName);
+    }
+
+    /**
+    * @inheritDoc
+    */
+    public static function existsBy(
+        $condition,
+        ?string $connectionName = null
+    ) : bool {
+
+        $query = (new Sql)
+            ->select('1')
+            ->from(static::getTableName())
+            ->limit(1);
+        if (!empty($condition)) {
+            $query->where($condition);
+        }
+        $exists = $query->execute($connectionName);
+
+        return (bool)$exists->fetchColumn();
+    }
+
+    /**
+    * @inheritDoc
+    */
+    public function __construct(
+        ?string $connectionName = null,
+        ?array $values = null
+    ) {
         if (isset($connectionName)) {
             $this->connectionName = $connectionName;
         }
@@ -134,7 +238,7 @@ trait PersistenceTrait
         if (count($values) != count($primaryKey)) {
             $undefined = array_keys(array_diff_key($primaryKey, $values));
             throw new \Exception(
-                "ID field " . implode(', ', $undefined) . "is undefined"
+                'ID field ' . implode(', ', $undefined) . 'is undefined'
             );
         }
         return $values;
@@ -195,15 +299,15 @@ trait PersistenceTrait
 
         list($auto, $values, $defaults) = $this->getFieldDataFor('insert');
 
-        $query = "INSERT INTO `" . static::getTableName() . "`";
+        $query = 'INSERT INTO `' . static::getTableName() . '`';
         $params = [];
         if (!empty($values)) {
-            $query .= " SET `"
+            $query .= ' SET `'
                 . implode('` = ?, `', array_keys($values))
                 . '` = ?';
             $params = array_values($values);
         } else {
-            $query .= " VALUES()";
+            $query .= ' VALUES()';
         }
 
         if (Qm::getDebug()) {
@@ -232,10 +336,10 @@ trait PersistenceTrait
 
         $condition = $this->getPrimaryKeyValues();
 
-        $query = "SELECT `"
+        $query = 'SELECT `'
             . implode('`, `', array_keys(static::getField()))
-            . "` FROM `" . static::getTableName() . "` WHERE `"
-            . implode("` = ? AND `", array_keys($condition)) . "` = ?";
+            . '` FROM `' . static::getTableName() . '` WHERE `'
+            . implode('` = ? AND `', array_keys($condition)) . '` = ?';
         $params = array_values($condition);
 
         if (Qm::getDebug()) {

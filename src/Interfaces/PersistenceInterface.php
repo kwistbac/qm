@@ -10,7 +10,7 @@ interface PersistenceInterface extends FieldInterface
     * @param ?string $connectionName
     * @return ?self
     */
-    public static function findOneById($id, ?string $connectionName = null) : ?self;
+    public static function find($id, ?string $connectionName = null) : ?self;
 
     /**
     * Find one by condition
@@ -20,6 +20,57 @@ interface PersistenceInterface extends FieldInterface
     * @return ?self
     */
     public static function findOneBy($condition, ?string $connectionName = null) : ?self;
+
+    /**
+    * Find all
+    *
+    * @param ?string $connectionName
+    * @return \Traversable
+    */
+    public static function findAll(?string $connectionName = null) : \Traversable;
+
+    /**
+    * Find by condition
+    *
+    * @param mixed $condition
+    * @param ?string $connectionName
+    * @return \Traversable
+    */
+    public static function findBy($condition, ?string $connectionName = null) : \Traversable;
+
+    /**
+    * Count all
+    *
+    * @param ?string $connectionName
+    * @return int
+    */
+    public static function countAll(?string $connectionName = null) : int;
+
+    /**
+    * Count by condition
+    *
+    * @param mixed $condition
+    * @param ?string $connectionName
+    * @return int
+    */
+    public static function countBy($condition, ?string $connectionName = null) : int;
+
+    /**
+    * Verify any exists
+    *
+    * @param ?string $connectionName
+    * @return boolean
+    */
+    public static function existsAny(?string $connectionName = null) : bool;
+
+    /**
+    * Verify exists by condition
+    *
+    * @param mixed $condition
+    * @param ?string $connectionName
+    * @return boolean
+    */
+    public static function existsBy($condition, ?string $connectionName = null) : bool;
 
     /**
     * Constructor
