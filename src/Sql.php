@@ -136,7 +136,7 @@ class Sql
                 : null
             )
             . (!empty($this->sqlParts['groupBy'])
-                ? $this->getGroupByAsSql()
+                ? ' ' . $this->getGroupByAsSql()
                 : null
             )
             . (!empty($this->sqlParts['having'])
