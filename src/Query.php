@@ -45,7 +45,7 @@ class Query extends Sql
                 } elseif (is_array($field[$alias])) {
                     $this->prepareAssocFields($alias, $field[$alias]);
                 } else {
-                    $this->prepareAssocFields($alias, [$field[$alias]]);
+                    $this->prepareAssocField($alias, $field);
                 }
             } elseif ($alias == '*') {
                 if ($key > 0) {
@@ -68,7 +68,7 @@ class Query extends Sql
                 }
                 $this->prepareClassFields($classAlias, $classes[$classAlias]);
             } else {
-                $this->prepareAssocFields($alias, [$alias]);
+                $this->prepareAssocField($alias);
             }
         }
     }
@@ -107,23 +107,23 @@ class Query extends Sql
         }
     }
 
+    private function prepareAssocField($alias, ?string $field = null)
+    {
+        if (isset($this->mapping[$alias])) {
+            throw new \Exception("Duplicate field selected: {$alias}");
+        }
+        $this->mapping[$alias] = null;
+        parent::addSelect(isset($field) ? "{$field} '{$alias}'" : $alias);
+    }
+
     private function prepareAssocFields($alias, array $fields)
     {
         if (isset($this->mapping[$alias])) {
             throw new \Exception("Duplicate field selected: {$alias}");
         }
-        if (count($fields) == 1
-            && is_integer(array_keys($fields)[0])) {
-            $this->mapping[$alias] = null;
-        } else {
-            $this->mapping[$alias] = ['fields' => $fields];
-        }
+        $this->mapping[$alias] = ['fields' => array_keys($fields)];
         foreach ($fields as $name => $sql) {
-            if (is_integer($name)) {
-                parent::addSelect("{$sql}");
-            } else {
-                parent::addSelect("{$sql} {$name}");
-            }
+            parent::addSelect("{$sql} '{$alias}_{$name}'");
         }
     }
 
