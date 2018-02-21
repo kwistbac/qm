@@ -145,7 +145,7 @@ trait PersistenceTrait
         }
         $count = $query->execute($connectionName);
 
-        return (int)$exists->fetchColumn();
+        return (int)$count->fetchColumn();
     }
 
     /**
