@@ -45,7 +45,7 @@ class Query extends Sql
                 } elseif (is_array($field[$alias])) {
                     $this->prepareAssocFields($alias, $field[$alias]);
                 } else {
-                    $this->prepareAssocField($alias, $field);
+                    $this->prepareAssocField($alias, $field[$alias]);
                 }
             } elseif ($alias == '*') {
                 if ($key > 0) {
