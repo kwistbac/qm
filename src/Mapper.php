@@ -346,8 +346,8 @@ class Mapper implements \Iterator, \Countable
                             );
                         }
                     }
-                } else {
-                    $results[$current][$alias] = $row[$offset];
+                } elseif (isset($row[$offset])) {
+                    $results[$current][$alias][] = $row[$offset];
                 }
                 $offset += $count;
             }
