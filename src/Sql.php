@@ -417,8 +417,11 @@ class Sql
     **/
     public function where($expression) : self
     {
-        $this->sqlParts['where'] = [['AND', $expression]];
+        $this->sqlParts['where'] = [];
         $this->dirty = true;
+        if (!empty($expression)) {
+            $this->sqlParts['where'] = [['AND', $expression]];
+        }
         return $this;
     }
 
@@ -432,8 +435,10 @@ class Sql
     **/
     public function andWhere($expression) : self
     {
-        $this->sqlParts['where'][] = ['AND', $expression];
-        $this->dirty = true;
+        if (!empty($expression)) {
+            $this->sqlParts['where'][] = ['AND', $expression];
+            $this->dirty = true;
+        }
         return $this;
     }
 
@@ -441,15 +446,17 @@ class Sql
     /**
     * Format
     *
-    * [condition, <parameter1>, ...]
+    * [expression, <parameter1>, ...]
     *
     * See Sql::setWhere for full format
     *
     **/
     public function orWhere($expression) : self
     {
-        $this->sqlParts['where'][] = ['OR', $expression];
-        $this->dirty = true;
+        if (!empty($expression)) {
+            $this->sqlParts['where'][] = ['OR', $expression];
+            $this->dirty = true;
+        }
         return $this;
     }
 
@@ -459,23 +466,23 @@ class Sql
     * Full:
     * [
     *   [operator] => [
-    *       [condition, <parameter1>, ...],
+    *       [expression, <parameter1>, ...],
     *       ...
     *   ]
     * ]
     *
     * Short (defaults to operator AND):
     * [
-    *   [condition, <parameter1>, ...],
+    *   [expression, <parameter1>, ...],
     *   ...
     * ]
     *
     * The default operator is AND.
     *
     **/
-    public function setWhere(array $expression) : self
+    public function setWhere(array $conditions) : self
     {
-        $this->sqlParts['where'] = $expression;
+        $this->sqlParts['where'] = $conditions;
         $this->dirty = true;
         return $this;
     }
@@ -493,11 +500,23 @@ class Sql
     *   ...
     *
     **/
-    public function groupBy(array ...$groupBy) : self
+    public function groupBy(...$groupBy) : self
     {
         $this->sqlParts['groupBy'] = [];
         foreach ($groupBy as $values) {
-            $this->addGroupBy(...$values);
+            if (is_array($values)) {
+                if (is_array(reset($values))) {
+                    foreach ($values as $value) {
+                        $this->addGroupBy(...$value);
+                    }
+                } else {
+                    foreach ($values as $value) {
+                        $this->addGroupBy($value);
+                    }
+                }
+            } else {
+                $this->addGroupBy($values);
+            }
         }
         return $this;
     }
@@ -538,45 +557,52 @@ class Sql
     /**
     * Format
     *
-    * [condition, <parameter1>, ...]
+    * [expression, <parameter1>, ...]
     *
     * See Sql::setHaving for full format
     *
     **/
-    public function having($condition) : self
+    public function having($expression) : self
     {
-        $this->sqlParts['having'] = [['AND', $condition]];
+        $this->sqlParts['having'] = [];
         $this->dirty = true;
+        if (!empty($expression)) {
+            $this->sqlParts['having'] = [['AND', $expression]];
+        }
         return $this;
     }
 
     /**
     * Format
     *
-    * [condition, <parameter1>, ...]
+    * [expression, <parameter1>, ...]
     *
     * See Sql::setHaving for full format
     *
     **/
-    public function andHaving($condition) : self
+    public function andHaving($expression) : self
     {
-        $this->sqlParts['having'][] = ['AND', $condition];
-        $this->dirty = true;
+        if (!empty($expression)) {
+            $this->sqlParts['having'][] = ['AND', $expression];
+            $this->dirty = true;
+        }
         return $this;
     }
 
     /**
     * Format
     *
-    * [condition, <parameter1>, ...]
+    * [expression, <parameter1>, ...]
     *
     * See Sql::setHaving for full format
     *
     **/
-    public function orHaving($condition) : self
+    public function orHaving($expression) : self
     {
-        $this->sqlParts['having'][] = ['OR', $condition];
-        $this->dirty = true;
+        if (!empty($expression)) {
+            $this->sqlParts['having'][] = ['OR', $expression];
+            $this->dirty = true;
+        }
         return $this;
     }
 
@@ -586,23 +612,23 @@ class Sql
     * Full:
     * [
     *   [operator] => [
-    *       [condition, <parameter1>, ...],
+    *       [expression, <parameter1>, ...],
     *       ...
     *   ]
     * ]
     *
     * Short (defaults to operator AND):
     * [
-    *   [condition, <parameter1>, ...],
+    *   [expression, <parameter1>, ...],
     *   ...
     * ]
     *
     * The default operator is AND.
     *
     **/
-    public function setHaving(array $having) : self
+    public function setHaving(array $conditions) : self
     {
-        $this->sqlParts['having'] = $having;
+        $this->sqlParts['having'] = $conditions;
         $this->dirty = true;
         return $this;
     }
@@ -622,12 +648,23 @@ class Sql
     * ]
     *
     **/
-
-    public function orderBy(array ...$orderBy) : self
+    public function orderBy(...$orderBy) : self
     {
         $this->sqlParts['orderBy'] = [];
         foreach ($orderBy as $values) {
-            $this->addOrderBy(...$values);
+            if (is_array($values)) {
+                if (is_array(reset($values))) {
+                    foreach ($values as $value) {
+                        $this->addOrderBy(...$value);
+                    }
+                } else {
+                    foreach ($values as $value) {
+                        $this->addOrderBy($value);
+                    }
+                }
+            } else {
+                $this->addOrderBy($values);
+            }
         }
         return $this;
     }
