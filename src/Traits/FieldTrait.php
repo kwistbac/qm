@@ -160,6 +160,8 @@ trait FieldTrait
             break;
             case FieldInterface::FIELD_CHAR:
             case FieldInterface::FIELD_VARCHAR:
+            case FieldInterface::FIELD_BINARY:
+            case FieldInterface::FIELD_VARBINARY:
                 if (strlen($value) > $field['length']) {
                     return 'must be no longer than'
                         . " {$field['length']} characters"

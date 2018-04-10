@@ -13,6 +13,8 @@ interface MetadataInterface
     // String fields
     const FIELD_CHAR = 'CHAR';
     const FIELD_VARCHAR = 'VARCHAR';
+    const FIELD_BINARY = 'BINARY';
+    const FIELD_VARBINARY = 'VARBINARY';
     const FIELD_TINYTEXT = 'TINYTEXT';
     const FIELD_TEXT = 'TEXT';
     const FIELD_MEDIUMTEXT = 'MEDIUMTEXT';
@@ -41,6 +43,8 @@ interface MetadataInterface
         self::FIELD_ENUM => 'string',
         self::FIELD_CHAR => 'string',
         self::FIELD_VARCHAR => 'string',
+        self::FIELD_BINARY => 'string',
+        self::FIELD_VARBINARY => 'string',
         self::FIELD_TINYTEXT => 'string',
         self::FIELD_TEXT => 'string',
         self::FIELD_MEDIUMTEXT => 'string',

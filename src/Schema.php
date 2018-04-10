@@ -120,6 +120,8 @@ final class Schema
                 break;
                 case MetadataInterface::FIELD_CHAR:
                 case MetadataInterface::FIELD_VARCHAR:
+                case MetadataInterface::FIELD_BINARY:
+                case MetadataInterface::FIELD_VARBINARY:
                     $sql[] = "`{$field}` " . strtolower($meta['type']) . '('
                         . (isset($meta['length'])
                             ? $meta['length']
