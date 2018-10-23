@@ -100,11 +100,8 @@ trait RepositoryTrait
         if (!empty($orderBy)) {
             $query->orderBy($orderBy);
         }
-        if (isset($limit)) {
-            $query->limit($limit);
-        }
-        if (isset($offset)) {
-            $query->offset($offset);
+        if (isset($limit) || isset($offset)) {
+            $query->limit($limit, $offset);
         }
         return $query->execute($connectionName);
     }
@@ -186,11 +183,8 @@ trait RepositoryTrait
         if (isset($orderBy)) {
             $query->orderBy($orderBy);
         }
-        if (isset($limit)) {
-            $query->limit($limit);
-        }
-        if (isset($offset)) {
-            $query->offset($offset);
+        if (isset($limit) || isset($offset)) {
+            $query->limit($limit, $offset);
         }
         return $query->execute($connectionName)->setFetchMode(\PDO::FETCH_COLUMN);
     }
@@ -217,11 +211,8 @@ trait RepositoryTrait
         if (isset($orderBy)) {
             $query->orderBy($orderBy);
         }
-        if (isset($limit)) {
-            $query->limit($limit);
-        }
-        if (isset($offset)) {
-            $query->offset($offset);
+        if (isset($limit) || isset($offset)) {
+            $query->limit($limit, $offset);
         }
         return $query->execute($connectionName)
             ->fetchAll(\PDO::FETCH_COLUMN | \PDO::FETCH_UNIQUE);
