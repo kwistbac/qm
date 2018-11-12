@@ -194,13 +194,13 @@ final class Schema
 
     protected static function getIndexKeysAsSql(string $class)
     {
-        $indexKeys = $class::getIndexKeys();
-        if (!isset($indexKeys)) {
+        $indexKeysMeta = $class::getIndexKeys();
+        if (!isset($indexKeysMeta)) {
             return null;
         }
 
         $sql = [];
-        foreach ($indexKeys as $keyName => $fieldNames) {
+        foreach ($indexKeysMeta as $keyName => $fieldNames) {
             $sql[] = "KEY"
                 . (is_string($keyName) ? " `{$keyName}`" : null)
                 . " (`" . implode('`, `', $fieldNames) . "`)";
@@ -210,13 +210,13 @@ final class Schema
 
     protected static function getUniqueKeysAsSql(string $class) : ?string
     {
-        $uniqueKeys = $class::getUniqueKeys();
-        if (!isset($uniqueMeta)) {
+        $uniqueKeysMeta = $class::getUniqueKeys();
+        if (!isset($uniqueKeysMeta)) {
             return null;
         }
 
         $sql = [];
-        foreach ($uniqueMeta as $uniqueName => $fieldNames) {
+        foreach ($uniqueKeysMeta as $uniqueName => $fieldNames) {
             $sql[] = "UNIQUE KEY"
                 . (is_string($uniqueName) ? " `{$uniqueName}`" : null)
                 . " (`" . implode('`, `', $fieldNames) . "`)";
