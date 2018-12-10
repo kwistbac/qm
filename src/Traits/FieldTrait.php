@@ -235,7 +235,7 @@ trait FieldTrait
             );
         }
         if (!array_key_exists($fieldName, $this->values)
-            || $this->values[$fieldName] != $value) {
+            || $this->values[$fieldName] !== $value) {
             $this->dirty[$fieldName] = $value;
         }
         return $this;
