@@ -77,7 +77,7 @@ interface MetadataInterface
 
         self::FIELD_DATETIME => 'Y-m-d H:i:s',
         self::FIELD_DATE => 'Y-m-d',
-        self::FIELD_TIME => 'H:i:s',
+        self::FIELD_TIME => '^[-]?((83[0-8])|(8[0-2][0-9])|([0-7]?[0-9]?[0-9])):[0-5]?[0-9](:[0-5]?[0-9])?$',
         self::FIELD_YEAR => [1901, 2155],
     ];
 

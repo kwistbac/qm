@@ -180,12 +180,17 @@ trait FieldTrait
             break;
             case FieldInterface::FIELD_DATETIME:
             case FieldInterface::FIELD_DATE:
-            case FieldInterface::FIELD_TIME:
                 $dt = \DateTime::createFromFormat(
                     $formats[$field['type']],
                     $value
                 );
                 if ($dt === false || array_sum($dt->getLastErrors())) {
+                    return "must be of the format {$formats[$field['type']]}"
+                        . ', invalid format given';
+                }
+            break;
+            case FieldInterface::FIELD_TIME:
+                if (!preg_match("/{$formats[$field['type']]}/", $value)) {
                     return "must be of the format {$formats[$field['type']]}"
                         . ', invalid format given';
                 }
