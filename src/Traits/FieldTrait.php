@@ -175,8 +175,7 @@ trait FieldTrait
                 }
                 if (isset($field['unsigned']) && $field['unsigned']) {
                     if (!preg_match("/^{$pattern}$/", $value)) {
-                        return "must be in range "
-                            . ($integral ? str_repeat('0', $integral) : '0')
+                        return "must be in range 0"
                             . ($fractional ? "." . str_repeat('0', $fractional) : null)
                             . " - " . ($integral ? str_repeat('9', $integral) : '0')
                             . ($fractional ? "." . str_repeat('9', $fractional) : null)
