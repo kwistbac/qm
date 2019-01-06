@@ -23,6 +23,13 @@ interface FieldInterface extends MetadataInterface
     public function isDirty(?string $fieldName = null) : bool;
 
     /**
+    * Check new state
+    *
+    * @return boolean
+    */
+    public function isNew() : bool;
+
+    /**
     * Clean dirty values
     *
     * @return self

@@ -112,6 +112,14 @@ trait FieldTrait
     /**
     * @inheritDoc
     */
+    public function isNew() : bool
+    {
+        return empty($this->values);
+    }
+
+    /**
+    * @inheritDoc
+    */
     public function clean() : FieldInterface
     {
         $this->dirty = [];
@@ -155,16 +163,42 @@ trait FieldTrait
                     $min = 0;
                 }
                 if ($min > $value || $max < $value) {
-                    return "must be in the range $min - $max, $value given";
+                    return "must be in range $min - $max, $value given";
+                }
+            break;
+            case FieldInterface::FIELD_DECIMAL:
+                $fractional = $field['scale'] ?? 0;
+                $integral = ($field['precision'] ?? 10) - $fractional;
+                $pattern = $integral ? '\d{1,' . $integral . '}' : '0';
+                if ($fractional) {
+                    $pattern .= '(\.\d{0,' . $fractional . '})?';
+                }
+                if (isset($field['unsigned']) && $field['unsigned']) {
+                    if (!preg_match("/^{$pattern}$/", $value)) {
+                        return "must be in range "
+                            . ($integral ? str_repeat('0', $integral) : '0')
+                            . ($fractional ? "." . str_repeat('0', $fractional) : null)
+                            . " - " . ($integral ? str_repeat('9', $integral) : '0')
+                            . ($fractional ? "." . str_repeat('9', $fractional) : null)
+                            . ", $value given";
+                    }
+                } elseif (!preg_match("/^[-]?{$pattern}$/", $value)) {
+                    return "must be in range "
+                        . "-" . ($integral ? str_repeat('9', $integral) : '0')
+                        . ($fractional ? "." . str_repeat('9', $fractional) : null)
+                        . " - " . ($integral ? str_repeat('9', $integral) : '0')
+                        . ($fractional ? "." . str_repeat('9', $fractional) : null)
+                        . ", $value given";
                 }
             break;
             case FieldInterface::FIELD_CHAR:
             case FieldInterface::FIELD_VARCHAR:
             case FieldInterface::FIELD_BINARY:
             case FieldInterface::FIELD_VARBINARY:
-                if (strlen($value) > $field['length']) {
+                $length = $field['length'] ?? 50;
+                if (strlen($value) > $length) {
                     return 'must be no longer than'
-                        . " {$field['length']} characters"
+                        . " {$length} characters"
                         . ', ' . strlen($value) . ' given';
                 }
             break;
@@ -185,14 +219,14 @@ trait FieldTrait
                     $value
                 );
                 if ($dt === false || array_sum($dt->getLastErrors())) {
-                    return "must be of the format {$formats[$field['type']]}"
+                    return "must be of format {$formats[$field['type']]}"
                         . ', invalid format given';
                 }
             break;
             case FieldInterface::FIELD_TIME:
-                if (!preg_match("/{$formats[$field['type']]}/", $value)) {
-                    return "must be of the format {$formats[$field['type']]}"
-                        . ', invalid format given';
+                if (!preg_match("/{$formats[$field['type']][0]}/", $value)) {
+                    return "must be in range {$formats[$field['type']][1]} - {$formats[$field['type']][2]}"
+                        . ", $value given";
                 }
             break;
             case FieldInterface::FIELD_ENUM:

@@ -25,6 +25,7 @@ interface MetadataInterface
     const FIELD_DATE = 'DATE';
     const FIELD_TIME = 'TIME';
     const FIELD_YEAR = 'YEAR';
+    const FIELD_DECIMAL = 'DECIMAL';
 
     // Float fields
     const FIELD_FLOAT = 'FLOAT';
@@ -50,6 +51,7 @@ interface MetadataInterface
         self::FIELD_MEDIUMTEXT => 'string',
         self::FIELD_LONGTEXT => 'string',
         self::FIELD_JSON => 'string',
+        self::FIELD_DECIMAL => 'string',
 
         self::FIELD_DATETIME => 'string',
         self::FIELD_DATE => 'string',
@@ -77,7 +79,11 @@ interface MetadataInterface
 
         self::FIELD_DATETIME => 'Y-m-d H:i:s',
         self::FIELD_DATE => 'Y-m-d',
-        self::FIELD_TIME => '^[-]?((83[0-8])|(8[0-2][0-9])|([0-7]?[0-9]?[0-9])):[0-5]?[0-9](:[0-5]?[0-9])?$',
+        self::FIELD_TIME => [
+            '^[-]?((83[0-8])|(8[0-2][0-9])|([0-7]?[0-9]?[0-9])):[0-5]?[0-9](:[0-5]?[0-9])?$',
+            '-838:59:59',
+            '838:59:59'
+        ],
         self::FIELD_YEAR => [1901, 2155],
     ];
 

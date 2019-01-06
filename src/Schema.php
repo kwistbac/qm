@@ -118,15 +118,30 @@ final class Schema
                             : null
                         );
                 break;
+                case MetadataInterface::FIELD_DECIMAL:
+                    $sql[] = "`{$field}` " . strtolower($meta['type'])
+                        . '(' . (isset($meta['precision']) ? $meta['precision'] : 10)
+                        . ',' . (isset($meta['scale']) ? $meta['scale'] : 0) . ')'
+                        . (isset($meta['unsigned']) && $meta['unsigned']
+                            ? " unsigned"
+                            : null
+                        )
+                        . (!isset($meta['null']) || $meta['null']
+                            ? (isset($meta['default'])
+                                ? " DEFAULT '{$meta['default']}'"
+                                : " DEFAULT NULL"
+                            ) : " NOT NULL" . (isset($meta['default'])
+                                ? " DEFAULT '{$meta['default']}'"
+                                : null
+                            )
+                        );
+                break;
                 case MetadataInterface::FIELD_CHAR:
                 case MetadataInterface::FIELD_VARCHAR:
                 case MetadataInterface::FIELD_BINARY:
                 case MetadataInterface::FIELD_VARBINARY:
-                    $sql[] = "`{$field}` " . strtolower($meta['type']) . '('
-                        . (isset($meta['length'])
-                            ? $meta['length']
-                            : 50
-                        ). ')'
+                    $sql[] = "`{$field}` " . strtolower($meta['type'])
+                        . '(' . (isset($meta['length']) ? $meta['length'] : 50) . ')'
                         . (!isset($meta['null']) || $meta['null']
                             ? (isset($meta['default'])
                                 ? " DEFAULT '{$meta['default']}'"
