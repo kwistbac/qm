@@ -87,12 +87,62 @@ trait MetadataTrait
     /**
     * @inheritDoc
     */
+    public static function getFieldDefault(string $fieldName)
+    {
+        if (!isset(static::$fields[$fieldName])) {
+            throw new \InvalidArgumentException(
+                "In " . get_called_class()
+                . ": undefined field \"$fieldName\"");
+        }
+        if (!array_key_exists('default', static::$fields[$fieldName])) {
+            throw new \InvalidArgumentException(
+                "In " . get_called_class()
+                . ": undefined attribute \"default\" for field \"$fieldName\"");
+        }
+        return static::$fields[$fieldName]['default'];
+    }
+
+    /**
+    * @inheritDoc
+    */
+    public static function getFieldValues(string $fieldName) : array
+    {
+        if (!isset(static::$fields[$fieldName])) {
+            throw new \InvalidArgumentException(
+                "In " . get_called_class()
+                . ": undefined field \"$fieldName\"");
+        }
+        if (!array_key_exists('values', static::$fields[$fieldName])) {
+            throw new \InvalidArgumentException(
+                "In " . get_called_class()
+                . ": undefined attribute \"values\" for field \"$fieldName\"");
+        }
+        return static::$fields[$fieldName]['values'];
+    }
+
+    /**
+    * @inheritDoc
+    */
     public static function getFields() : array
     {
         if (empty(static::$fields)) {
             throw new \Exception("No fields are defined");
         }
         return static::$fields;
+    }
+
+    /**
+    * @inheritDoc
+    */
+    public static function getDefaults() : array
+    {
+        $defaults = [];
+        foreach (static::$fields as $key => $attributes) {
+            if (array_key_exists('default', $attributes)) {
+                $defaults[$key] = $attributes['default'];
+            }
+        }
+        return $defaults;
     }
 
     /**

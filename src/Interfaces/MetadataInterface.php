@@ -114,11 +114,34 @@ interface MetadataInterface
     public static function getField(string $fieldName) : array;
 
     /**
+    * Get default attribute for a field
+    *
+    * @param string $fieldName
+    * @return mixed
+    */
+    public static function getFieldDefault(string $fieldName);
+
+    /**
+    * Get values attribute for a field
+    *
+    * @param string $fieldName
+    * @return array
+    */
+    public static function getFieldValues(string $fieldName) : array;
+
+    /**
     * Get attributes for all fields
     *
     * @return array
     */
     public static function getFields() : array;
+
+    /**
+    * Get default attributes for all fields
+    *
+    * @return array
+    */
+    public static function getDefaults() : array;
 
     /**
     * Get primary key
