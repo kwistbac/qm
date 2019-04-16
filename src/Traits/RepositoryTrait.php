@@ -175,7 +175,7 @@ trait RepositoryTrait
         ?string $connectionName = null
     ) : \Traversable {
         $query = (new Query)
-            ->select($fieldName)
+            ->select($field)
             ->from(static::class);
         if (isset($condition)) {
             $query->where($condition);
@@ -186,7 +186,9 @@ trait RepositoryTrait
         if (isset($limit) || isset($offset)) {
             $query->limit($limit, $offset);
         }
-        return $query->execute($connectionName)->setFetchMode(\PDO::FETCH_COLUMN);
+        $statement = $query->execute($connectionName);
+        $statement->setFetchMode(\PDO::FETCH_COLUMN, 0);
+        return $statement;
     }
 
     /**
